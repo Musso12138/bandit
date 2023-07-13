@@ -345,6 +345,7 @@ def get_path_for_function(f):
 
 
 def parse_ini_file(f_loc):
+    """从INI格式的文件中读取bandit section的配置"""
     config = configparser.ConfigParser()
     try:
         config.read(f_loc)

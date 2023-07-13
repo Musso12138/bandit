@@ -21,7 +21,9 @@ LOG = logging.getLogger()
 
 
 def _init_logger(log_level=logging.INFO, log_format=None):
-    """Initialize the logger.
+    """初始化logging，包括level和format
+
+    Initialize the logger.
 
     :param debug: Whether to enable debug mode
     :return: An instantiated logging instance
@@ -44,7 +46,10 @@ def _init_logger(log_level=logging.INFO, log_format=None):
 
 
 def _get_options_from_ini(ini_path, target):
-    """Return a dictionary of config options or None if we can't load any."""
+    """根据--ini指定的ini_path或target目标文件，扫描.bandit文件加载bandit自定义配置
+
+    Return a dictionary of config options or None if we can't load any.
+    """
     ini_file = None
 
     if ini_path:
@@ -76,6 +81,7 @@ def _get_options_from_ini(ini_path, target):
 
 
 def _init_extensions():
+    """初始化一个extension管理器，包括formatters、plugins、blacklists，对应三个目录"""
     from bandit.core import extension_loader as ext_loader
 
     return ext_loader.MANAGER
@@ -155,6 +161,7 @@ def main():
         description="Bandit - a Python source code security analyzer",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    # targets是待检测的目标python文件或目录
     parser.add_argument(
         "targets",
         metavar="targets",
@@ -169,6 +176,7 @@ def main():
         action="store_true",
         help="find and process files in subdirectories",
     )
+    # 按vuln或按file聚合输出检测结果
     parser.add_argument(
         "-a",
         "--aggregate",
@@ -428,6 +436,7 @@ def main():
         parser.error("--msg-template can only be used with --format=custom")
 
     # Check if confidence or severity level have been specified with strings
+    # 设置severity输出级别，severity是实际控制的，severity_string是接受用户输入的字符串
     if args.severity_string is not None:
         if args.severity_string == "all":
             args.severity = 1
@@ -439,6 +448,7 @@ def main():
             args.severity = 4
         # Other strings will be blocked by argparse
 
+    # 设置confidence输出级别，confidence是实际控制的置信度，confidence_string是接受用户输入的字符串
     if args.confidence_string is not None:
         if args.confidence_string == "all":
             args.confidence = 1
@@ -456,8 +466,10 @@ def main():
         LOG.error(e)
         sys.exit(2)
 
+    # 在ini_path和targets路径下搜索.bandit文件（INI格式）载入自定义配置
     # Handle .bandit files in projects to pass cmdline args from file
     ini_options = _get_options_from_ini(args.ini_path, args.targets)
+    # 默认是命令行参数，如果使用ini_path进行配置，则重新从ini文件导入配置
     if ini_options:
         # prefer command line, then ini file
         args.excluded_paths = _log_option_source(
@@ -592,10 +604,12 @@ def main():
             "path of a baseline report",
         )
 
+    # 没设置目标文件时直接终止程序
     if not args.targets:
         parser.print_usage()
         sys.exit(2)
 
+    # 指明了其他的log format，重新配置log level和format
     # if the log format string was set in the options, reinitialize
     if b_conf.get_option("log_format"):
         log_format = b_conf.get_option("log_format")
@@ -616,6 +630,7 @@ def main():
         LOG.error(e)
         sys.exit(2)
 
+    # 初始化BanditManager
     b_mgr = b_manager.BanditManager(
         b_conf,
         args.agg_type,
