@@ -61,8 +61,8 @@ class BanditManager:
             profile = {}
         self.ignore_nosec = ignore_nosec
         self.b_conf = config
-        self.files_list = []
-        self.excluded_files = []
+        self.files_list = []                    # targets中待检测文件路径列表
+        self.excluded_files = []                # targets中根据规则排除的文件路径列表
         self.b_ma = b_meta_ast.BanditMetaAst()
         self.skipped = []
         self.results = []
@@ -198,7 +198,10 @@ class BanditManager:
             )
 
     def discover_files(self, targets, recursive=False, excluded_paths=""):
-        """Add tests directly and from a directory to the test set
+        """根据targets形成待检测文件路径列表，考虑recursive发现子目录内容、
+        excluded_paths排除特定模式的路径
+
+        Add tests directly and from a directory to the test set
 
         :param targets: The command line list of files and directories
         :param recursive: True/False - whether to add all files from dirs
@@ -257,7 +260,9 @@ class BanditManager:
         self.excluded_files = sorted(excluded_files)
 
     def run_tests(self):
-        """Runs through all files in the scope
+        """根据tests检查
+
+        Runs through all files in the scope
 
         :return: -
         """
@@ -368,6 +373,7 @@ class BanditManager:
 def _get_files_from_dir(
     files_dir, included_globs=None, excluded_path_strings=None
 ):
+    """遍历files_dir，根据included_globs和excluded_path_strings返回待检测文件列表和排除文件列表"""
     if not included_globs:
         included_globs = ["*.py"]
     if not excluded_path_strings:
@@ -390,7 +396,9 @@ def _get_files_from_dir(
 def _is_file_included(
     path, included_globs, excluded_path_strings, enforce_glob=True
 ):
-    """Determine if a file should be included based on filename
+    """检查指定文件路径是否应被包含到检测文件中
+
+    Determine if a file should be included based on filename
 
     This utility function determines if a file should be included based
     on the file name, a list of parsed extensions, excluded paths, and a flag
@@ -417,6 +425,7 @@ def _is_file_included(
 
 
 def _matches_glob_list(filename, glob_list):
+    """匹配filename的格式是否在glob_list中"""
     for glob in glob_list:
         if fnmatch.fnmatch(filename, glob):
             return True

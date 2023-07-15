@@ -668,6 +668,7 @@ def main():
             sys.version_info.micro,
         )
 
+    # 扫描targets下所有.py文件，找到所有待检测文件和排除文件，放入b_mgr.files_list和b_mgr.excluded_files
     # initiate file discovery step within Bandit Manager
     b_mgr.discover_files(args.targets, args.recursive, args.excluded_paths)
 
@@ -675,6 +676,7 @@ def main():
         LOG.error("No tests would be run, please check the profile.")
         sys.exit(2)
 
+    # 实际检测entry point
     # initiate execution of tests within Bandit Manager
     b_mgr.run_tests()
     LOG.debug(b_mgr.b_ma)

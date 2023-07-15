@@ -86,7 +86,10 @@ class BanditTestSet:
         return [Wrapper("blacklist", blacklisting.blacklist)]
 
     def _load_tests(self, config, plugins):
-        """Builds a dict mapping tests to node types."""
+        """建立字典self.tests，将tests映射到node类型上
+
+        Builds a dict mapping tests to node types.
+        """
         self.tests = {}
         for plugin in plugins:
             if hasattr(plugin.plugin, "_takes_config"):
