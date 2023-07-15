@@ -47,6 +47,7 @@ def _get_attr_qual_name(node, aliases):
 
 
 def get_call_name(node, aliases):
+    """结合ast.Call节点和别名字典解析实际调用的函数名"""
     if isinstance(node.func, ast.Name):
         if deepgetattr(node, "func.id") in aliases:
             return aliases[deepgetattr(node, "func.id")]

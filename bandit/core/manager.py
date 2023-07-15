@@ -269,6 +269,7 @@ class BanditManager:
         # if we have problems with a file, we'll remove it from the files_list
         # and add it to the skipped list instead
         new_files_list = list(self.files_list)
+        # 如果待检测文件数量超过50个，就用rich.progress.track()做进度条
         if (
             len(self.files_list) > PROGRESS_THRESHOLD
             and LOG.getEffectiveLevel() <= logging.INFO
@@ -281,6 +282,8 @@ class BanditManager:
             LOG.debug("working on file : %s", fname)
 
             try:
+                # 既有约定，如果文件名为-，从stdin读取数据
+                # 用_parse_file实际检测python文件
                 if fname == "-":
                     open_fd = os.fdopen(sys.stdin.fileno(), "rb", 0)
                     fdata = io.BytesIO(open_fd.read())
@@ -302,12 +305,13 @@ class BanditManager:
         self.metrics.aggregate()
 
     def _parse_file(self, fname, fdata, new_files_list):
+        """实际扫描和检测文件的函数"""
         try:
             # parse the current file
             data = fdata.read()
             lines = data.splitlines()
-            self.metrics.begin(fname)
-            self.metrics.count_locs(lines)
+            self.metrics.begin(fname)       # 以文件名创建一个新的统计结果
+            self.metrics.count_locs(lines)  # 统计文件中待处理代码行数（去掉空行和注释的行数）
             # nosec_lines is a dict of line number -> set of tests to ignore
             #                                         for the line
             nosec_lines = dict()
@@ -317,6 +321,7 @@ class BanditManager:
 
                 if not self.ignore_nosec:
                     for toktype, tokval, (lineno, _), _, _ in tokens:
+                        # 利用词法分析结果获取注释内容，利用_parse_nosec_comment检查注释结果如上对nosec_lines的注释
                         if toktype == tokenize.COMMENT:
                             nosec_lines[lineno] = _parse_nosec_comment(tokval)
 
@@ -347,7 +352,9 @@ class BanditManager:
             LOG.debug("  Exception traceback: %s", traceback.format_exc())
 
     def _execute_ast_visitor(self, fname, fdata, data, nosec_lines):
-        """Execute AST parse on each file
+        """解析并处理特定文件的AST
+
+        Execute AST parse on each file
 
         :param fname: The name of the file being parsed
         :param data: Original file contents
@@ -365,6 +372,7 @@ class BanditManager:
             self.metrics,
         )
 
+        # 正式开始进行基于AST的python文件分析
         score = res.process(data)
         self.results.extend(res.tester.results)
         return score
@@ -483,6 +491,7 @@ def _find_test_id_from_nosec_string(extman, match):
 
 
 def _parse_nosec_comment(comment):
+    """检查注释中是否有nosec，如果有，进一步提取test id加入到test_ids中返回"""
     found_no_sec_comment = NOSEC_COMMENT.search(comment)
     if not found_no_sec_comment:
         # there was no nosec comment

@@ -14,6 +14,7 @@ LOG = logging.getLogger(__name__)
 
 
 class BanditNodeVisitor:
+    """模仿实现了ast模块内的NodeVisitor，重写了一些安全相关的节点visit方法"""
     def __init__(
         self, fname, fdata, metaast, testset, debug, nosec_lines, metrics
     ):
@@ -30,7 +31,7 @@ class BanditNodeVisitor:
         self.metaast = metaast
         self.testset = testset
         self.imports = set()
-        self.import_aliases = {}
+        self.import_aliases = {}        # 维护字典，记录alias -> import as/from import as
         self.tester = b_tester.BanditTester(
             self.testset, self.debug, nosec_lines, metrics
         )
@@ -188,6 +189,7 @@ class BanditNodeVisitor:
             self.update_scores(self.tester.run_tests(self.context, "Bytes"))
 
     def pre_visit(self, node):
+        """正式处理node前置函数，将node相关信息存入context以便处理时使用"""
         self.context = {}
         self.context["imports"] = self.imports
         self.context["import_aliases"] = self.import_aliases
@@ -238,7 +240,14 @@ class BanditNodeVisitor:
             self.namespace = b_utils.namespace_path_split(self.namespace)[0]
 
     def generic_visit(self, node):
-        """Drive the visitor."""
+        """驱动visitor递归访问ast节点，从ast.parse结果返回的第一个ast.Module节点开始，
+
+        Drive the visitor.
+        """
+        # 递归访问AST中的所有node
+        # 为node添加属性：
+        # _bandit_sibling：node的兄弟node，即同级节点中index+1的node
+        # _bandit_parent：node的父node
         for _, value in ast.iter_fields(node):
             if isinstance(value, list):
                 max_idx = len(value) - 1
@@ -249,7 +258,7 @@ class BanditNodeVisitor:
                         else:
                             item._bandit_sibling = None
                         item._bandit_parent = node
-
+                        # 正式处理node前调用pre_visit进行前置处理
                         if self.pre_visit(item):
                             self.visit(item)
                             self.generic_visit(item)
@@ -278,7 +287,7 @@ class BanditNodeVisitor:
             )
 
     def process(self, data):
-        """Main process loop
+        """基于AST检测恶意内容的程序入口点Main process loop
 
         Build and process the AST
         :param lines: lines code to process

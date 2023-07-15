@@ -60,7 +60,9 @@ class Metrics:
         self.current["skipped_tests"] += num
 
     def count_locs(self, lines):
-        """Count lines of code.
+        """计算待处理的代码行数
+
+        Count lines of code.
 
         We count lines that are not empty and are not comments. The result is
         added to our currently active metrics loc count (normally this is 0).
