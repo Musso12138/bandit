@@ -273,7 +273,9 @@ class BanditNodeVisitor:
                     self.post_visit(value)
 
     def update_scores(self, scores):
-        """Score updater
+        """根据self.tests.run_test结果更新检测结果
+
+        Score updater
 
         Since we moved from a single score value to a map of scores per
         severity, this is needed to update the stored list.
